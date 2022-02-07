@@ -24,11 +24,13 @@ defmodule UeberauthStrava.Mixfile do
   end
 
   defp deps do
-    [{:ueberauth, "~> 0.4"},
-     {:oauth2, "~> 0.8"},
-     {:ex_doc, "~> 0.19", only: :dev},
-     {:earmark, ">= 0.0.0", only: :dev},
-     {:dogma, ">= 0.0.0", only: [:dev, :test]}]
+    [
+      {:oauth2, "~> 2.0"},
+      {:ueberauth, "~> 0.6.3"},
+      {:ex_doc, "~> 0.19", only: :dev},
+      {:earmark, ">= 0.0.0", only: :dev},
+      {:dogma, ">= 0.0.0", only: [:dev, :test]}
+    ]
   end
 
   defp docs do
