@@ -31,10 +31,14 @@ defmodule Ueberauth.Strategy.Strava do
   Handles the callback from Strava.
   """
   def handle_callback!(%Plug.Conn{params: %{"code" => code}} = conn) do
-    opts = [redirect_uri: callback_url(conn)]
+    opts = [
+      grant_type: "authorization_code",
+      redirect_uri: callback_url(conn),
+      code: code
+    ]
 
     try do
-      client = Ueberauth.Strategy.Strava.OAuth.get_token!([code: code], opts)
+      client = Ueberauth.Strategy.Strava.OAuth.get_token!(opts)
       token = client.token
 
       if token.access_token == nil do
