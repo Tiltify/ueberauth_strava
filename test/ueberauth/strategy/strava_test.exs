@@ -49,7 +49,11 @@ defmodule Ueberauth.Strategy.StravaTest do
     csrf_conn: csrf_conn
   } do
     conn =
-      conn(:get, "/auth/strava/callback", %{code: "success_code", state: csrf_state})
+      conn(:get, "/auth/strava/callback", %{
+        code: "success_code",
+        state: csrf_state,
+        scope: "read"
+      })
       |> set_csrf_cookies(csrf_conn)
 
     routes = Ueberauth.init([])
@@ -74,20 +78,13 @@ defmodule Ueberauth.Strategy.StravaTest do
   defp response(body, code \\ 200), do: {:ok, %OAuth2.Response{status_code: code, body: body}}
   defp oauth2_get_token(client, code: "success_code"), do: token(client, "success_token")
 
-  defp oauth2_get(%{token: %{access_token: "success_token"}}, _url, _, _),
+  defp oauth2_get(%{token: %{access_token: "success_token"}}, "/api/v3/athlete", _, _),
     do:
       response(%{
-        "token_type" => "Bearer",
-        "expires_at" => 1_647_040_821,
-        "expires_in" => 17_062,
-        "refresh_token" => "some_refresh_token",
-        "access_token" => "some_access_token",
-        "athlete" => %{
-          "id" => 123_123_123,
-          "resource_state" => 2,
-          "firstname" => "Fred",
-          "lastname" => "Jones"
-        }
+        "id" => 123_123_123,
+        "resource_state" => 2,
+        "firstname" => "Fred",
+        "lastname" => "Jones"
       })
 
   defp set_csrf_cookies(conn, csrf_conn) do

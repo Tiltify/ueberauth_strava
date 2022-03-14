@@ -26,16 +26,12 @@ defmodule Ueberauth.Strategy.Strava.OAuth do
   of Ueberauth.
   """
   def client(opts \\ []) do
-    config = Application.get_env(:ueberauth, Ueberauth.Strategy.Strava.OAuth)
-
-    opts =
-      @defaults
-      |> Keyword.merge(config)
-      |> Keyword.merge(opts)
-
+    config = Application.get_env(:ueberauth, Ueberauth.Strategy.Strava.OAuth, [])
+    opts = @defaults |> Keyword.merge(config) |> Keyword.merge(opts)
     json_library = Ueberauth.json_library()
 
-    OAuth2.Client.new(opts)
+    opts
+    |> OAuth2.Client.new()
     |> OAuth2.Client.put_serializer("application/json", json_library)
   end
 
@@ -49,7 +45,8 @@ defmodule Ueberauth.Strategy.Strava.OAuth do
   end
 
   def get(token, url, headers \\ [], opts \\ []) do
-    client(token: token)
+    [token: token]
+    |> client()
     |> put_param("client_secret", client().client_secret)
     |> OAuth2.Client.get(url, headers, opts)
   end
@@ -59,12 +56,12 @@ defmodule Ueberauth.Strategy.Strava.OAuth do
     code = Map.get(params, "code")
 
     case OAuth2.Client.get_token(client, code: code) do
-      {:error, %{body: %{"error" => error, "error_description" => description}}} ->
-        {:error, {error, description}}
+      {:error, %{body: %{"errors" => errors, "message" => description}}} ->
+        {:error, {errors, description}}
 
       {:ok, %{token: %{access_token: nil} = token}} ->
-        %{"error" => error, "error_description" => description} = token.other_params
-        {:error, {error, description}}
+        %{"errors" => errors, "message" => description} = token.other_params
+        {:error, {errors, description}}
 
       {:ok, %{token: token}} ->
         {:ok, token}
@@ -72,14 +69,6 @@ defmodule Ueberauth.Strategy.Strava.OAuth do
   end
 
   # Strategy Callbacks
-  def authorize_url(client, params) do
-    AuthCode.authorize_url(client, params)
-  end
-
-  def get_token(client, params, headers) do
-    client
-    |> put_param(:client_secret, client.client_secret)
-    |> put_header("Accept", "application/json")
-    |> AuthCode.get_token(params, headers)
-  end
+  def authorize_url(client, params), do: AuthCode.authorize_url(client, params)
+  def get_token(client, params, headers), do: AuthCode.get_token(client, params, headers)
 end

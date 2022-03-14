@@ -61,7 +61,6 @@ defmodule Ueberauth.Strategy.Strava do
   def uid(conn) do
     conn.private
     |> Map.fetch!(:strava_athlete)
-    |> Map.fetch!("athlete")
     |> Map.fetch!("id")
     |> to_string
   end
@@ -91,7 +90,6 @@ defmodule Ueberauth.Strategy.Strava do
       conn
       |> Map.get(:private)
       |> Map.get(:strava_athlete)
-      |> Map.get("athlete")
 
     %Info{
       name: "#{athlete["firstname"]} #{athlete["lastname"]}",
@@ -127,6 +125,9 @@ defmodule Ueberauth.Strategy.Strava do
       {:ok, %OAuth2.Response{status_code: status_code, body: athlete}}
       when status_code in 200..399 ->
         put_private(conn, :strava_athlete, athlete)
+
+      {:error, %OAuth2.Response{status_code: status_code}} ->
+        set_errors!(conn, [error("OAuth2", status_code)])
 
       {:error, %OAuth2.Error{reason: reason}} ->
         set_errors!(conn, [error("OAuth2", reason)])
