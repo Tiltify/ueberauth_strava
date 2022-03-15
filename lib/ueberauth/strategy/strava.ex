@@ -96,8 +96,7 @@ defmodule Ueberauth.Strategy.Strava do
       first_name: athlete["firstname"],
       last_name: athlete["lastname"],
       description: athlete["bio"],
-      image: athlete["profile"],
-      email: athlete["email"]
+      image: athlete["profile"]
     }
   end
 
