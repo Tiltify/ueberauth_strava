@@ -92,7 +92,8 @@ defmodule Ueberauth.Strategy.Strava do
       |> Map.get(:strava_athlete)
 
     %Info{
-      name: "#{athlete["firstname"]} #{athlete["lastname"]}",
+      nickname: athlete["username"],
+      name: athlete["username"],
       first_name: athlete["firstname"],
       last_name: athlete["lastname"],
       description: athlete["bio"],
