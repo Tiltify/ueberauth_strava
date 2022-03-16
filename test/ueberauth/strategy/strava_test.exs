@@ -59,8 +59,10 @@ defmodule Ueberauth.Strategy.StravaTest do
     routes = Ueberauth.init([])
     assert %Plug.Conn{assigns: %{ueberauth_auth: auth}} = Ueberauth.call(conn, routes)
     assert auth.credentials.token == "success_token"
-    assert auth.info.name == "Fred Jones"
     assert auth.info.first_name == "Fred"
+    assert auth.info.last_name == "Jones"
+    assert auth.info.name == "Frejones"
+    assert auth.info.nickname == "Frejones"
     assert auth.uid == "123123123"
   end
 
@@ -88,7 +90,8 @@ defmodule Ueberauth.Strategy.StravaTest do
       "id" => 123_123_123,
       "resource_state" => 2,
       "firstname" => "Fred",
-      "lastname" => "Jones"
+      "lastname" => "Jones",
+      "username" => "Frejones"
     })
   end
 
