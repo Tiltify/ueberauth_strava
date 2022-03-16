@@ -74,18 +74,23 @@ defmodule Ueberauth.Strategy.StravaTest do
     end
   end
 
-  defp token(client, opts), do: {:ok, %{client | token: OAuth2.AccessToken.new(opts)}}
   defp response(body, code \\ 200), do: {:ok, %OAuth2.Response{status_code: code, body: body}}
-  defp oauth2_get_token(client, code: "success_code"), do: token(client, "success_token")
 
-  defp oauth2_get(%{token: %{access_token: "success_token"}}, "/api/v3/athlete", _, _),
-    do:
-      response(%{
-        "id" => 123_123_123,
-        "resource_state" => 2,
-        "firstname" => "Fred",
-        "lastname" => "Jones"
-      })
+  defp oauth2_get_token(%{client_secret: "client_secret"} = client, code: "success_code") do
+    {:ok, %{client | token: OAuth2.AccessToken.new("success_token")}}
+  end
+
+  defp oauth2_get(%{token: token, params: params}, "/api/v3/athlete", _, _) do
+    assert %{access_token: "success_token"} = token
+    assert %{"client_secret" => "client_secret"} = params
+
+    response(%{
+      "id" => 123_123_123,
+      "resource_state" => 2,
+      "firstname" => "Fred",
+      "lastname" => "Jones"
+    })
+  end
 
   defp set_csrf_cookies(conn, csrf_conn) do
     conn
