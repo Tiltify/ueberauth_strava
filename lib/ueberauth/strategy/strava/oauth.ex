@@ -9,6 +9,7 @@ defmodule Ueberauth.Strategy.Strava.OAuth do
     client_secret: System.get_env("Strava_APP_SECRET")
   """
   use OAuth2.Strategy
+  alias OAuth2.Strategy.AuthCode
 
   @defaults [
     strategy: __MODULE__,
@@ -25,16 +26,12 @@ defmodule Ueberauth.Strategy.Strava.OAuth do
   of Ueberauth.
   """
   def client(opts \\ []) do
-    config = Application.get_env(:ueberauth, Ueberauth.Strategy.Strava.OAuth)
-
-    opts =
-      @defaults
-      |> Keyword.merge(config)
-      |> Keyword.merge(opts)
-
+    config = Application.get_env(:ueberauth, Ueberauth.Strategy.Strava.OAuth, [])
+    opts = @defaults |> Keyword.merge(config) |> Keyword.merge(opts)
     json_library = Ueberauth.json_library()
 
-    OAuth2.Client.new(opts)
+    opts
+    |> OAuth2.Client.new()
     |> OAuth2.Client.put_serializer("application/json", json_library)
   end
 
@@ -43,39 +40,41 @@ defmodule Ueberauth.Strategy.Strava.OAuth do
   No need to call this usually.
   """
   def authorize_url!(params \\ [], opts \\ []) do
-    opts
-    |> client
-    |> OAuth2.Client.authorize_url!(params)
+    client = client(opts)
+    OAuth2.Client.authorize_url!(client, params)
   end
 
   def get(token, url, headers \\ [], opts \\ []) do
-    client(token: token)
-    |> put_param("client_secret", client().client_secret)
+    [token: token]
+    |> client()
+    |> put_param(:client_secret, client().client_secret)
     |> OAuth2.Client.get(url, headers, opts)
   end
 
-  def get_token!(params \\ [], opts \\ []) do
-    opts
-    |> client
-    |> OAuth2.Client.get_token!(token_params(params))
-  end
+  def get_token(params \\ [], opts \\ []) do
+    client = client(opts)
+    code = Map.get(params, "code")
 
-  def token_params(params \\ []) do
-    Application.get_env(:ueberauth, Ueberauth.Strategy.Strava.OAuth)
-    |> Keyword.take([:client_id, :client_secret])
-    |> Keyword.merge(params)
+    case OAuth2.Client.get_token(client, code: code) do
+      {:error, %{body: %{"errors" => errors, "message" => description}}} ->
+        {:error, {errors, description}}
+
+      {:ok, %{token: %{access_token: nil} = token}} ->
+        %{"errors" => errors, "message" => description} = token.other_params
+        {:error, {errors, description}}
+
+      {:ok, %{token: token}} ->
+        {:ok, token}
+    end
   end
 
   # Strategy Callbacks
-
-  def authorize_url(client, params) do
-    OAuth2.Strategy.AuthCode.authorize_url(client, params)
-  end
+  def authorize_url(client, params), do: AuthCode.authorize_url(client, params)
 
   def get_token(client, params, headers) do
     client
     |> put_param(:client_secret, client.client_secret)
     |> put_header("Accept", "application/json")
-    |> OAuth2.Strategy.AuthCode.get_token(params, headers)
+    |> AuthCode.get_token(params, headers)
   end
 end
