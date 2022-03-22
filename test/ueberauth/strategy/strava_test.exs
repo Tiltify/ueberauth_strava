@@ -60,16 +60,20 @@ defmodule Ueberauth.Strategy.StravaTest do
 
     routes = Ueberauth.init([])
     assert %Plug.Conn{assigns: %{ueberauth_auth: auth}} = Ueberauth.call(conn, routes)
+
+    utc_now =
+      DateTime.utc_now()
+      |> DateTime.truncate(:second)
+      |> DateTime.to_unix()
+
+    token_expires_at = utc_now + @token_ttl
+
     assert auth.credentials.token == "success_token"
     assert auth.credentials.refresh_token == "refresh_token"
 
-    assert auth.credentials.expires_at ==
-             DateTime.utc_now()
-             |> DateTime.truncate(:second)
-             |> DateTime.to_unix()
-             |> Kernel.+(@token_ttl)
-
+    assert auth.credentials.expires_at == token_expires_at
     assert auth.info.first_name == "Fred"
+
     assert auth.info.last_name == "Jones"
     assert auth.info.name == "Frejones"
     assert auth.info.nickname == "Frejones"
