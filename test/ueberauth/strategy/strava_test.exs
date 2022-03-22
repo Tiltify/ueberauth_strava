@@ -23,6 +23,8 @@ defmodule Ueberauth.Strategy.StravaTest do
     {:ok, csrf_conn: csrf_conn, csrf_state: csrf_state}
   end
 
+  @token_ttl 6 * 60 * 60
+
   test "handle_request! redirects to appropriate auth uri" do
     conn = conn(:get, "/auth/strava", %{})
     routes = Ueberauth.init() |> set_options(conn, default_scope: "read")
@@ -58,8 +60,20 @@ defmodule Ueberauth.Strategy.StravaTest do
 
     routes = Ueberauth.init([])
     assert %Plug.Conn{assigns: %{ueberauth_auth: auth}} = Ueberauth.call(conn, routes)
+
+    utc_now =
+      DateTime.utc_now()
+      |> DateTime.truncate(:second)
+      |> DateTime.to_unix()
+
+    token_expires_at = utc_now + @token_ttl
+
     assert auth.credentials.token == "success_token"
+    assert auth.credentials.refresh_token == "refresh_token"
+
+    assert auth.credentials.expires_at == token_expires_at
     assert auth.info.first_name == "Fred"
+
     assert auth.info.last_name == "Jones"
     assert auth.info.name == "Frejones"
     assert auth.info.nickname == "Frejones"
@@ -79,11 +93,19 @@ defmodule Ueberauth.Strategy.StravaTest do
   defp response(body, code \\ 200), do: {:ok, %OAuth2.Response{status_code: code, body: body}}
 
   defp oauth2_get_token(%{client_secret: "client_secret"} = client, code: "success_code") do
-    {:ok, %{client | token: OAuth2.AccessToken.new("success_token")}}
+    token =
+      OAuth2.AccessToken.new(%{
+        "access_token" => "success_token",
+        "refresh_token" => "refresh_token",
+        "expires_in" => @token_ttl
+      })
+
+    {:ok, %{client | token: token}}
   end
 
   defp oauth2_get(%{token: token, params: params}, "/api/v3/athlete", _, _) do
-    assert %{access_token: "success_token"} = token
+    assert %{access_token: "success_token", refresh_token: "refresh_token"} = token
+
     assert %{"client_secret" => "client_secret"} = params
 
     response(%{

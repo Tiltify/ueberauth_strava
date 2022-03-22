@@ -77,7 +77,8 @@ defmodule Ueberauth.Strategy.Strava do
       expires: !!token.expires_at,
       expires_at: token.expires_at,
       scopes: scopes,
-      token: token.access_token
+      token: token.access_token,
+      refresh_token: token.refresh_token
     }
   end
 
