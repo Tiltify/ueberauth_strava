@@ -15,14 +15,10 @@ defmodule Ueberauth.Strategy.Strava do
   """
   def handle_request!(conn) do
     scopes = conn.params["scope"] || option(conn, :default_scope)
-    opts = [redirect_uri: callback_url(conn), scope: scopes]
 
     opts =
-      if conn.params["state"] do
-        Keyword.put(opts, :state, conn.params["state"])
-      else
-        opts
-      end
+      [redirect_uri: callback_url(conn), scope: scopes]
+      |> with_state_param(conn)
 
     url = OAuth.authorize_url!(opts)
     redirect!(conn, url)
